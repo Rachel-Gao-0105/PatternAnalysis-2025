@@ -1,7 +1,3 @@
-'''
-containing the data loader for loading and preprocessing the data
-'''
-
 import random
 from torchvision import datasets, transforms
 from torch.utils.data import Subset
