@@ -1,11 +1,11 @@
 import os, argparse, torch, torch.nn as nn
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, roc_auc_score
+import matplotlib.pyplot as plt
 from modules import ConvNeXt
 from dataset import build_datasets
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 import numpy as np
-
 
 def mixup_data(x, y, alpha=0.2):
     """
@@ -62,7 +62,7 @@ def train_one_epoch(model, loader, criterion, optimizer, device, scaler, epoch=N
         scaler.update()
 
         losses.append(loss.item())
-        probs = out.softmax(1)[:, 1].detach().cpu().tolist()  
+        probs = out.softmax(1)[:, 1].detach().cpu().tolist()  # prob of class-1
         prob_pos_list.extend(probs)
         hard_preds.extend(out.argmax(1).detach().cpu().tolist())
         gts.extend(y.detach().cpu().tolist())
@@ -138,7 +138,7 @@ def main():
     mean = [0.485, 0.456, 0.406]
     std  = [0.229, 0.224, 0.225]
 
-    #dataloaders
+    #Dataloaders
     train_ds, test_ds = build_datasets(
         root_dir=args.data_root,
         img_size=args.img_size,
@@ -157,20 +157,23 @@ def main():
                      dropout_rate=args.dropout_rate).to(device)
     model = model.to(memory_format=torch.channels_last)
 
-    print(">> Training with AMP + MixUp + Early Stopping + AUC")
+    print(">> Training")
 
     #optimizer
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
-    warmup_steps = max(1, int(0.05 * args.epochs))   
-    t_max = max(1, args.epochs - warmup_steps)      
+    warmup_steps = max(1, int(0.05 * args.epochs))
+    t_max = max(1, args.epochs - warmup_steps)
     warmup = LinearLR(optimizer, start_factor=0.1, total_iters=warmup_steps)
     cosine = CosineAnnealingLR(optimizer, T_max=t_max)
     scheduler = SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_steps])
 
     # AMP scaler
-    scaler = torch.amp.GradScaler("cuda", enabled=(device == "cuda"))
+    scaler = torch.cuda.amp.GradScaler(enabled=(device == "cuda"))
+
+    #history dict
+    history = {"tr_loss": [], "tr_acc": [], "tr_auc": [], "val_loss": [], "val_acc": [], "val_auc": []}
 
     best_acc = 0.0
     best_ckpt_path = os.path.join(args.out_dir, "best_acc.pth")
@@ -183,6 +186,14 @@ def main():
             epoch=epoch, total_epochs=args.epochs
         )
         val_loss, val_acc, val_auc = evaluate(model, val_loader, criterion, device)
+
+        #record history
+        history["tr_loss"].append(tr_loss)
+        history["tr_acc"].append(tr_acc)
+        history["tr_auc"].append(tr_auc)
+        history["val_loss"].append(val_loss)
+        history["val_acc"].append(val_acc)
+        history["val_auc"].append(val_auc)
 
         print(f"Epoch {epoch:03d} | "
               f"train loss {tr_loss:.4f} acc {tr_acc:.3f} auc {tr_auc:.3f} | "
@@ -210,6 +221,32 @@ def main():
             break
 
         scheduler.step()
+
+    os.makedirs(args.out_dir, exist_ok=True)
+
+    plt.figure()
+    plt.plot(history["tr_loss"])
+    plt.plot(history["val_loss"])
+    plt.legend(["train", "val"])
+    plt.title("Loss")
+    plt.savefig(os.path.join(args.out_dir, "loss.png"))
+    plt.close()
+
+    plt.figure()
+    plt.plot(history["tr_acc"])
+    plt.plot(history["val_acc"])
+    plt.legend(["train", "val"])
+    plt.title("Accuracy")
+    plt.savefig(os.path.join(args.out_dir, "acc.png"))
+    plt.close()
+
+    plt.figure()
+    plt.plot(history["tr_auc"])
+    plt.plot(history["val_auc"])
+    plt.legend(["train", "val"])
+    plt.title("AUC")
+    plt.savefig(os.path.join(args.out_dir, "auc.png"))
+    plt.close()
 
     print(f"Best val acc: {best_acc:.3f} | best_acc_ckpt: {best_ckpt_path}")
 
