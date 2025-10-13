@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, roc_auc_score
 import matplotlib.pyplot as plt
 from modules import ConvNeXt
-from dataset import build_datasets
+from dataset import build_datasets, data_loader
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 import numpy as np
 from sklearn.metrics import roc_curve
@@ -223,18 +223,14 @@ def main():
     std  = [0.229, 0.224, 0.225]
 
     # Build training and validation datasets
-    train_ds, test_ds = build_datasets(
-        root_dir=args.data_root,
-        img_size=args.img_size,
-        samples_per_class=args.samples_per_class_train,
-        seed=args.seed,
-        mean=mean, 
-        std=std
-    )
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
-                              num_workers=args.num_workers, pin_memory=True)
-    val_loader   = DataLoader(test_ds,  batch_size=args.batch_size, shuffle=False,
-                              num_workers=args.num_workers, pin_memory=True)
+    train_loader, val_loader = data_loader (root_dir=args.data_root, 
+                                                img_size=args.img_size, 
+                                                samples_per_class=args.samples_per_class_train, 
+                                                mean=mean, 
+                                                std=std, 
+                                                seed=args.seed, 
+                                                batch_size=args.batch_size, 
+                                                num_workers=args.num_workers)
 
     # Build model
     model = ConvNeXt(num_classes=args.num_classes, drop_path_rate=args.drop_path_rate, dropout_rate = args.dropout_rate) 
