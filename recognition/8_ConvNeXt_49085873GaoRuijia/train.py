@@ -5,6 +5,7 @@ from modules import ConvNeXt
 from dataset import build_datasets
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 
+
 def train_one_epoch(model, loader, criterion, optimizer, device, scaler):
     model.train()
     losses, preds, gts = [], [], []
@@ -67,6 +68,8 @@ def parse_args():
     ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--samples_per_class_train", type=int, default=None)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--patience", type=int, default=10, help="stop if no val_acc improvement for N epochs")
+    ap.add_argument("--target_acc", type=float, default=0.8, help="early stop immediately if val_acc >= this value")
     return ap.parse_args()
 
 
@@ -75,7 +78,6 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    #mean/std
     mean = [0.485, 0.456, 0.406]
     std  = [0.229, 0.224, 0.225]
 
@@ -98,7 +100,7 @@ def main():
                      drop_path_rate=args.drop_path_rate,
                      dropout_rate=args.dropout_rate).to(device)
 
-    print(">> Training with AMP enabled")
+    print(f">> Training with AMP | early stopping (patience={args.patience}, target_acc={args.target_acc})")
 
     #optimizer
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device)
@@ -110,11 +112,12 @@ def main():
     cosine = CosineAnnealingLR(optimizer, T_max=t_max)
     scheduler = SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_steps])
 
-    #AMP Scaler
+    # AMP scaler
     scaler = torch.amp.GradScaler("cuda", enabled=(device == "cuda"))
 
     best_acc = 0.0
     best_ckpt_path = os.path.join(args.out_dir, "best_acc.pth")
+    no_improve_epochs = 0
 
     for epoch in range(1, args.epochs + 1):
         tr_loss, tr_acc = train_one_epoch(model, train_loader, criterion, optimizer, device, scaler)
@@ -124,14 +127,27 @@ def main():
               f"train loss {tr_loss:.4f} acc {tr_acc:.3f} | "
               f"val loss {val_loss:.4f} acc {val_acc:.3f}")
 
+        #save best model
         if val_acc > best_acc:
             best_acc = val_acc
+            no_improve_epochs = 0
             torch.save({
                 "model": model.state_dict(),
                 "args": vars(args),
                 "mean": mean,
                 "std": std
             }, best_ckpt_path)
+        else:
+            no_improve_epochs += 1
+
+        #early stopping
+        if val_acc >= args.target_acc:
+            print(f"\nEarly stopping: validation acc reached {val_acc:.3f} ≥ target {args.target_acc:.3f}")
+            break
+
+        if no_improve_epochs >= args.patience:
+            print(f"\nEarly stopping: no val_acc improvement for {args.patience} epochs.")
+            break
 
         scheduler.step()
 
