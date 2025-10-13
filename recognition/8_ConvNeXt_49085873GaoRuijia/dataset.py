@@ -36,13 +36,13 @@ def build_transforms(img_size=224, mean=None, std=None):
     use fixed cropping only to ensure stable testing results
     CenterCrop() -- center crop to target size
     '''
-    test_tf = transforms.Compose([
+    val_tf = transforms.Compose([
         transforms.Resize(int(img_size*1.15)),
         transforms.CenterCrop(img_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=mean, std=std),
     ])
-    return train_tf, test_tf
+    return train_tf, val_tf
 
 def subset_by_class(dataset, samples_per_class=100, seed=42):
     """
@@ -78,14 +78,14 @@ def build_datasets(root_dir: str, img_size=224, samples_per_class=None, mean=Non
         mean = [0.485, 0.456, 0.406]
         std  = [0.229, 0.224, 0.225]
 
-    train_tf, test_tf = build_transforms(img_size,mean=mean, std=std)
+    train_tf, val_tf = build_transforms(img_size,mean=mean, std=std)
     train_ds = datasets.ImageFolder(f"{root_dir}/train", transform=train_tf)
-    test_ds  = datasets.ImageFolder(f"{root_dir}/test",  transform=test_tf)
+    val_ds  = datasets.ImageFolder(f"{root_dir}/validation",  transform=val_tf)
 
     if samples_per_class is not None:
         train_ds = subset_by_class(train_ds, samples_per_class, seed)
         #test_ds  = subset_by_class(test_ds,  samples_per_class, seed)
         print(f"Using subset mode: up to {samples_per_class} samples per class. ")
 
-    return train_ds, test_ds
+    return train_ds, val_ds
 
