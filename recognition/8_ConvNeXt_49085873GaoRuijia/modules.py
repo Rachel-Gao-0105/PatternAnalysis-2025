@@ -70,6 +70,7 @@ class ConvNeXt(nn.Module):
         depths: List[int] = [3, 3, 9, 3],
         dims: List[int] = [96, 192, 384, 768],
         drop_path_rate: float = 0.1,
+        dropout_rate: float = 0.2,
         layer_scale_init_value: float = 1e-6,
         head_init_scale: float = 1.0,
     ):
@@ -110,6 +111,7 @@ class ConvNeXt(nn.Module):
 
         #head: global average pooling + LN + dropout + linear layer
         self.norm = nn.LayerNorm(dims[-1], eps=1e-6)  #channels_last
+        self.dropout = nn.Dropout(p=dropout_rate) 
         self.head = nn.Linear(dims[-1], num_classes) if num_classes > 0 else nn.Identity()
 
         #initialize weights
