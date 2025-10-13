@@ -261,28 +261,29 @@ def main():
     # Mixed Precision Training (AMP)
     scaler = torch.amp.GradScaler("cuda", enabled=(device == "cuda"))
 
-    # Metric tracking
     '''
-    tr_loss
-    tr_acc
-    tr_auc
-    val_loss
-    val_acc
-    val_auc
-    val_acc_tuned
-    val_thr
+    Metric tracking
+
+    tr_loss        Average training loss over all batches in the current epoch
+    tr_acc         Training accuracy at a fixed threshold of 0.5
+    tr_auc         Training AUC (Area Under the ROC Curve)
+    val_loss       Average validation loss over all batches
+    val_acc        Validation accuracy at threshold 0.5
+    val_auc        Validation AUC
+    val_acc_tuned  Validation accuracy computed at the optimal threshold (maximizing TPR - FPR)
+    val_thr        Best decision threshold found from the ROC curve
     '''
     history = {"tr_loss":[], "tr_acc":[], "tr_auc":[], "val_loss":[], "val_acc":[], "val_auc":[], "val_acc_tuned":[], "val_thr":[]}
     best_acc = 0.0
     best_auc = 0.0
     best_acc_tuned = 0.0
 
-    # Paths for saving three different “best” models
     '''
-    best_acc.pth
-    best_auc.pth
-    best_acc_tuned.pth
-    3 个最优模型均保存 mean/std/best_thr
+    Paths for saving best models
+
+    best_acc.pth         Model achieving the highest validation accuracy at threshold = 0.5
+    best_auc.pth         Model achieving the highest validation AUC
+    best_acc_tuned.pth   Model achieving the highest validation accuracy at the optimal threshold
     '''
     best_acc_path = os.path.join(args.out_dir, "best_acc.pth")
     best_auc_path = os.path.join(args.out_dir, "best_auc.pth")
@@ -363,7 +364,15 @@ def main():
     plt.legend(["train","val"])
     plt.title("AUC")
     plt.savefig(os.path.join(args.out_dir,"auc.png"))
-
+    '''
+    plt.figure()
+    plt.plot(history["val_acc"])
+    plt.plot(history["val_auc"])
+    plt.plot(history["val_acc_tuned"])
+    plt.legend(["acc@0.5","AUC","acc@bestThr"])
+    plt.title("Val Metrics")
+    plt.savefig(os.path.join(args.out_dir,"val_metrics.png"))
+    '''
     print(f"Best val acc@0.5: {best_acc:.3f} | best_acc_ckpt: {best_acc_path}")
     print(f"Best val AUC: {best_auc:.3f} | best_auc_ckpt: {best_auc_path}")
     print(f"Best val acc@bestThr: {best_acc_tuned:.3f}  | best_acc_tuned_ckpt: {best_acc_tuned_path}")
