@@ -1,6 +1,7 @@
 import random
 from torchvision import datasets, transforms
 from torch.utils.data import Subset
+from torch.utils.data import DataLoader
 
 # === load the dataset ===========================================================================================================
 
@@ -85,3 +86,31 @@ def build_datasets(root_dir: str, img_size=224, samples_per_class=None, mean=Non
 
     return train_ds, val_ds
 
+def data_loader (root_dir: str, img_size=448, samples_per_class=None, mean=None, std=None, seed=42, batch_size=64, num_workers=0):
+    """
+    build dataloaders for training and validation sets
+
+    root_dir: root directory of dataset
+    img_size: target image size
+    samples_per_class: if not None, enable per-class sampling
+    mean, std: normalization parameters
+    seed: random seed for reproducibility
+    batch_size: number of samples per batch
+    num_workers: number of subprocesses for data loading
+
+    train_loader: dataloader for training set
+    val_loader: dataloader for validation set
+    """
+    train_ds, val_ds = build_datasets(
+        root_dir=root_dir,
+        img_size=img_size,
+        samples_per_class=samples_per_class,
+        seed=seed,
+        mean=mean, 
+        std=std
+    )
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
+                              num_workers=num_workers, pin_memory=True)
+    val_loader   = DataLoader(val_ds,  batch_size=batch_size, shuffle=False,
+                              num_workers=num_workers, pin_memory=True)
+    return train_loader, val_loader
