@@ -5,6 +5,12 @@ import torch.nn as nn
 # === utility layer: stochastic depth ===========================================================================================================
 
 class DropPath(nn.Module):
+    """
+    randomly drops residual branches during training
+    inactive during inference
+
+    drop_prob: float, probability of dropping the path
+    """
     def __init__(self, drop_prob: float = 0.0):
         super().__init__()
         self.drop_prob = float(drop_prob)
@@ -21,6 +27,10 @@ class DropPath(nn.Module):
 # === utility layer: LayerNorm for NCHW ===========================================================================================================
 
 class LayerNorm2d(nn.Module):
+    """
+    num_channels: number of feature channels
+    eps: small epsilon to avoid division by zero
+    """
     def __init__(self, num_channels: int, eps: float = 1e-6):
         super().__init__()
         self.weight = nn.Parameter(torch.ones(num_channels))
@@ -38,6 +48,14 @@ class LayerNorm2d(nn.Module):
 # === ConvNeXt Basic Block ===========================================================================================================
 
 class ConvNeXtBlock(nn.Module):
+    """
+    depthwise convolution + LayerNorm + pointwise conv + GELU activation 
+    + optional layer scaling and stochastic depth.
+
+    dim: number of channels
+    drop_path: drop probability for stochastic depth
+    layer_scale_init_value: initial value for layer scale parameter gamma
+    """
     def __init__(self, dim: int, drop_path: float = 0.0, layer_scale_init_value: float = 1e-6):
         super().__init__()
         self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim)
@@ -63,6 +81,17 @@ class ConvNeXtBlock(nn.Module):
 # === ConvNeXt Backbone ===========================================================================================================
 
 class ConvNeXt(nn.Module):
+    """
+    ConvNeXt backbone and classification head.
+
+    in_chans: number of input channels
+    num_classes: number of output classes
+    depths: number of blocks per stage
+    dims: channel dimensions per stage
+    drop_path_rate: overall drop path rate
+    layer_scale_init_value: init value for layer scale gamma
+    head_init_scale: scaling factor for head initialization
+    """
     def __init__(
         self,
         in_chans: int = 3,
@@ -137,6 +166,9 @@ class ConvNeXt(nn.Module):
         return x
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through feature extractor and classification head.
+        """
         x = self.forward_features(x)
         x = self.dropout(x) 
         x = self.head(x) 
