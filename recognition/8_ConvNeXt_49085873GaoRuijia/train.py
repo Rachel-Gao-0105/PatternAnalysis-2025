@@ -189,6 +189,7 @@ def parse_args():
     ap.add_argument("--drop_path_rate", type=float, default=0.1, help="stochastic depth (DropPath) rate")
     ap.add_argument("--dropout_rate", type=float, default=0.2, help="dropout rate to prevent overfitting")
     ap.add_argument("--weight_decay", type=float, default=0.07, help="L2 regularization factor for optimizer to control model complexity")
+    ap.add_argument("--label_smoothing", type=float, default=0.1, help="label smoothing factor for CrossEntropyLoss, 0 to disable")
     ap.add_argument("--batch_size", type=int, default=64, help="number of samples per batch")
     ap.add_argument("--epochs", type=int, default=50, help="total number of training epochs")
     ap.add_argument("--lr", type=float, default=1.5e-4, help="initial learning rate for optimizer")
@@ -196,7 +197,7 @@ def parse_args():
     ap.add_argument("--num_workers", type=int, default=0, help="number of subprocesses for data loading")  
     ap.add_argument("--samples_per_class_train", type=int, default=None, help="e.g. 100 to quick pilot, None to use full set")
     ap.add_argument("--seed", type=int, default=42)
-    #early stopping, None to disable min_delta = 1e-3
+    #early stopping, None to disable 
     ap.add_argument("--patience", type=int, default=10, help="epochs to wait without val_acc improvement, 0 to disable")
     ap.add_argument("--target_acc", type=float, default=0.8, help="early stop if val_acc >= target_acc, 0 to disable")
     ap.add_argument("--min_delta", type=float, default=1e-3, help="minimum improvement to reset stagnation counter")
@@ -251,7 +252,7 @@ def main():
     print(">> Training")
 
     # Loss function and optimizer
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
     criterion = criterion.to(device)
 
     # AdamW optimizer: adaptive learning + weight decay
