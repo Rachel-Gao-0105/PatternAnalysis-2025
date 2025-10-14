@@ -290,6 +290,7 @@ def main():
     patience = args.patience  # early-stopping patience (tolerated stagnation epochs)
     no_improve_epochs = 0 # counter for stagnation detection
     min_delta = args.min_delta  # minimum improvement to reset stagnation counter
+    thr_stop = 0 # flag to indicate early stopping triggered by reaching target accuracy
 
     # Training & Evaluation Loop
     for epoch in range(1, args.epochs + 1):
@@ -320,9 +321,10 @@ def main():
             no_improve_epochs += 1
 
         # Save model with the best tuned accuracy (based on ROC-optimal threshold)
-        if val_acc_tuned > best_acc_tuned:
-            best_acc_tuned = val_acc_tuned
-            torch.save({"model": model.state_dict(), "args": vars(args), "mean": mean, "std": std, "best_thr": best_thr}, best_acc_tuned_path)
+        if thr_stop == 0:
+            if val_acc_tuned > best_acc_tuned:
+                best_acc_tuned = val_acc_tuned
+                torch.save({"model": model.state_dict(), "args": vars(args), "mean": mean, "std": std, "best_thr": best_thr}, best_acc_tuned_path)
 
         # Save model with the highest accuracy at threshold 0.5
         if val_acc > best_acc:
@@ -337,6 +339,10 @@ def main():
         scheduler.step()
 
         # Early Stopping
+        if args.target_acc > 0 and val_acc_tuned >= args.target_acc:
+            thr_stop = 1
+            print(f"\nEarly Stopping saving best_acc_tuned.pth: Validation accuracy thuned reached {val_acc_tuned:.3f} ≥ {args.target_acc:.3f}.")
+        
         if args.target_acc > 0 and val_acc >= args.target_acc:
             print(f"\nEarly Stopping Triggered: Validation accuracy reached {val_acc:.3f} ≥ {args.target_acc:.3f}.")
             break
