@@ -103,32 +103,46 @@ def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5,
 
 @torch.no_grad()
 def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_workers=0, thr=0.5):
+    """
+    Evaluate a folder-structured dataset (ImageFolder style) with a trained model.
+
+    model: torch.nn.Module already moved to `device` and set to eval() by caller.
+    root_dir: Root directory containing subfolders: train/validation/test
+    split: Which subfolder under root_dir to evaluate
+    device: 'cuda' or 'cpu'.
+    tf: torchvision transform applied to each image
+    batch_size: DataLoader batch size.
+    num_workers: DataLoader workers.
+    thr: Decision threshold for binary classification on the probability of class index 1.
+    """
     folder = os.path.join(root_dir, split)
     if not os.path.isdir(folder):
         raise FileNotFoundError(f"Folder not found: {folder}")
 
-    ds = datasets.ImageFolder(folder, transform=tf) #按子文件夹名排序生成 classes，同时决定标签编码
+    # create dataset & loader
+    ds = datasets.ImageFolder(folder, transform=tf) #ImageFolder infers labels from subfolder names
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
                         num_workers=num_workers, pin_memory=True)
     class_names = ds.classes
 
-    preds, gts = [], []
+    preds, gts = [], [] #preds hold probabilities for positive class; gts holds integer labels
     for x, y in loader:
         x = x.to(device, non_blocking=True).to(memory_format=torch.channels_last)
         y = y.to(device, non_blocking=True)
+
+        # AMP forward pass
         with torch.amp.autocast("cuda", enabled=(device == "cuda")):
             out = model(x)
         p = out.softmax(1)[:, 1].detach().cpu().numpy() if out.shape[1] == 2 else out.softmax(1).detach().cpu().numpy().max(axis=1)
 
-        # 二分类：取正类（索引1）的softmax概率
-        preds.extend(p)  # 概率(正类)
+        # take probability of class index 1 as positive
+        preds.extend(p)  # probabilities for positive class
         gts.extend(y.cpu().numpy())
 
     preds = np.array(preds)
     gts = np.array(gts, dtype=int)
 
     # AUC & ACC
-    # 二分类概率
     try:
         auc = roc_auc_score(gts, preds)
     except Exception:
@@ -164,8 +178,6 @@ def main():
 
     # single image inference
     if args.image is not None:
-        # 若需要类别名而你没有数据集，可不传 class_names
-        # 如果你希望也显示类别名，可以临时从 data_root/split 读一下 classes
         predict_single_image(model, args.image, device, tf, class_names=class_names, thr=best_thr, show=True)
         return
 
