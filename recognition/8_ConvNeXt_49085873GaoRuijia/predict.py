@@ -51,7 +51,6 @@ def load_model_from_ckpt(ckpt_path, device):
 
 @torch.no_grad()
 def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5, show=False):
-    """返回 (pred_idx, prob1, probs)；如果传入 class_names，会打印可读类别名"""
     img = Image.open(img_path).convert("RGB")
     x = tf(img).unsqueeze(0).to(device)
 
@@ -59,7 +58,7 @@ def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5,
         logits = model(x)
         probs = F.softmax(logits, dim=1)[0].cpu().numpy()
 
-    # binary: thresholding; multi-class: argmax
+    #binary: thresholding; multi-class: argmax
     pred_idx = int(probs[1] >= thr) if probs.shape[0] == 2 else int(np.argmax(probs))
     prob1 = float(probs[pred_idx])
 
@@ -71,7 +70,10 @@ def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5,
         print(f"Pred index: {pred_idx} | Confidence: {prob1:.4f}")
 
     if show:
-        title = f"Pred: {class_names[pred_idx] if class_names else pred_idx} ({prob1*100:.1f}%)"
+        if class_names is not None:
+            title = f"Pred: class {class_names[pred_idx]}, index {pred_idx} ({prob1*100:.1f}%)"
+        else:
+            title = f"Pred: index {pred_idx} ({prob1*100:.1f}%)"
         plt.imshow(img)
         plt.title(title)
         plt.axis("off")
@@ -86,7 +88,7 @@ def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_worke
     if not os.path.isdir(folder):
         raise FileNotFoundError(f"Folder not found: {folder}")
 
-    ds = datasets.ImageFolder(folder, transform=tf) #indexed by subfolder names, which determine class indices
+    ds = datasets.ImageFolder(folder, transform=tf) # indexed by subfolder names
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
                         num_workers=num_workers, pin_memory=True)
     class_names = ds.classes
@@ -99,8 +101,8 @@ def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_worke
             out = model(x)
         p = out.softmax(1)[:, 1].detach().cpu().numpy() if out.shape[1] == 2 else out.softmax(1).detach().cpu().numpy().max(axis=1)
 
-        # binary: positive class prob; multi-class: max prob
-        preds.extend(p)  #probabilities (positive class)
+        # binary: prob of positive class; multi-class: max prob
+        preds.extend(p)  # probabilities
         gts.extend(y.cpu().numpy())
 
     preds = np.array(preds)
