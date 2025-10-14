@@ -54,7 +54,7 @@ def mixup_criterion(criterion, pred, y_a, y_b, lam):
 
 # === train_one_epoch ===========================================================================================================
 
-def train_one_epoch(model, loader, criterion, optimizer, device, scaler, epoch=None, total_epochs=None):
+def train_one_epoch(model, loader, criterion, optimizer, device, scaler, epoch=None, total_epochs=None, alpha=0.2):
     """
     Train the model for one epoch with optional MixUp augmentation and automatic mixed precision (AMP).
 
@@ -83,9 +83,9 @@ def train_one_epoch(model, loader, criterion, optimizer, device, scaler, epoch=N
 
         #dynamically adjust MixUp strength
         if epoch is not None and total_epochs is not None:
-            current_alpha = 0.2 * max(0.0, 1.0 - epoch / (0.7 * total_epochs))
+            current_alpha = alpha * max(0.0, 1.0 - epoch / (0.7 * total_epochs))
         else:
-            current_alpha = 0.2  #fallback
+            current_alpha = alpha  #fallback
         
         #apply MixUp augmentation
         x, y_a, y_b, lam = mixup_data(x, y, alpha=current_alpha)
@@ -200,6 +200,7 @@ def parse_args():
     ap.add_argument("--patience", type=int, default=10, help="epochs to wait without val_acc improvement, 0 to disable")
     ap.add_argument("--target_acc", type=float, default=0.8, help="early stop if val_acc >= target_acc, 0 to disable")
     ap.add_argument("--min_delta", type=float, default=1e-3, help="minimum improvement to reset stagnation counter")
+    ap.add_argument("--mixup_alpha", type=float, default=0.2, help="0 to disable MixUp")
     return ap.parse_args()
 
 def main():
@@ -296,7 +297,7 @@ def main():
     for epoch in range(1, args.epochs + 1):
         tr_loss, tr_acc, tr_auc = train_one_epoch(
                 model, train_loader, criterion, optimizer, device, scaler,
-                epoch=epoch, total_epochs=args.epochs
+                epoch=epoch, total_epochs=args.epochs, alpha=args.mixup_alpha
             )
         val_loss, val_acc, val_auc, val_acc_tuned, best_thr = evaluate(model, val_loader, criterion, device) #修改
 
@@ -341,7 +342,7 @@ def main():
         # Early Stopping
         if args.target_acc > 0 and val_acc_tuned >= args.target_acc:
             thr_stop = 1
-            print(f"\nEarly Stopping saving best_acc_tuned.pth: Validation accuracy thuned reached {val_acc_tuned:.3f} ≥ {args.target_acc:.3f}.")
+            print(f"\nEarly Stopping saving best_acc_tuned.pth: Validation accuracy tuned reached {val_acc_tuned:.3f} ≥ {args.target_acc:.3f}.")
         
         if args.target_acc > 0 and val_acc >= args.target_acc:
             print(f"\nEarly Stopping Triggered: Validation accuracy reached {val_acc:.3f} ≥ {args.target_acc:.3f}.")
