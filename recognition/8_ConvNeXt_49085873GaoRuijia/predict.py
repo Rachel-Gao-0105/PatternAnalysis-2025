@@ -39,15 +39,18 @@ def load_model_from_ckpt(ckpt_path, device):
     drop_path_rate = ckpt_args.get("drop_path_rate", 0.0)
     dropout_rate = ckpt_args.get("dropout_rate", 0.0)
 
+    mean      = ckpt.get("mean", [0.485, 0.456, 0.406])
+    std       = ckpt.get("std",  [0.229, 0.224, 0.225])
+    img_size  = ckpt.get("img_size", 448)
+    classes   = ckpt.get("classes", ['AD','NC'])
+    class_to_idx = ckpt.get("class_to_idx", {c:i for i,c in enumerate(classes)})
+    best_thr  = ckpt.get("best_thr", 0.5)
+
     model = ConvNeXt(num_classes=num_classes, drop_path_rate=drop_path_rate, dropout_rate=dropout_rate)
     model.load_state_dict(ckpt["model"])
     model = model.to(device).eval()
 
-    mean = ckpt.get("mean", [0.485, 0.456, 0.406])
-    std  = ckpt.get("std",  [0.229, 0.224, 0.225])
-    best_thr = ckpt.get("best_thr", 0.5)
-
-    return model, mean, std, best_thr, ckpt_args
+    return model, mean, std, best_thr, ckpt_args, classes
 
 @torch.no_grad()
 def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5, show=False):
@@ -58,7 +61,7 @@ def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5,
         logits = model(x)
         probs = F.softmax(logits, dim=1)[0].cpu().numpy()
 
-    #binary: thresholding; multi-class: argmax
+    # binary: thresholding; multi-class: argmax
     pred_idx = int(probs[1] >= thr) if probs.shape[0] == 2 else int(np.argmax(probs))
     prob1 = float(probs[pred_idx])
 
@@ -88,7 +91,7 @@ def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_worke
     if not os.path.isdir(folder):
         raise FileNotFoundError(f"Folder not found: {folder}")
 
-    ds = datasets.ImageFolder(folder, transform=tf) # indexed by subfolder names
+    ds = datasets.ImageFolder(folder, transform=tf) #indexing by subfolder names
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
                         num_workers=num_workers, pin_memory=True)
     class_names = ds.classes
@@ -101,8 +104,8 @@ def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_worke
             out = model(x)
         p = out.softmax(1)[:, 1].detach().cpu().numpy() if out.shape[1] == 2 else out.softmax(1).detach().cpu().numpy().max(axis=1)
 
-        # binary: prob of positive class; multi-class: max prob
-        preds.extend(p)  # probabilities
+        # binary: positive class prob; multi-class: max prob
+        preds.extend(p)  # positive class prob for binary, max prob for multi-class
         gts.extend(y.cpu().numpy())
 
     preds = np.array(preds)
@@ -136,7 +139,7 @@ def main():
     print(f"Device: {device}")
 
     # load ckpt & model
-    model, mean, std, best_thr, ckpt_args = load_model_from_ckpt(args.ckpt, device)
+    model, mean, std, best_thr, ckpt_args, class_names = load_model_from_ckpt(args.ckpt, device)
 
     # transform
     img_size = args.img_size
@@ -144,10 +147,6 @@ def main():
 
     # single image inference
     if args.image is not None:
-        class_names = None   #{'AD': 0, 'NC': 1}
-        if args.data_root and os.path.isdir(os.path.join(args.data_root, args.split)):
-            tmp_ds = datasets.ImageFolder(os.path.join(args.data_root, args.split))
-            class_names = tmp_ds.classes
         predict_single_image(model, args.image, device, tf, class_names=class_names, thr=best_thr, show=True)
         return
 
