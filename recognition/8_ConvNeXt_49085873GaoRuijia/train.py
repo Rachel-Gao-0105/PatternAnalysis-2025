@@ -348,32 +348,25 @@ def main():
     plt.figure(); 
     plt.plot(history["tr_loss"]) 
     plt.plot(history["val_loss"]) 
-    plt.legend(["train","val"]) 
+    plt.legend(["train_loss","val_loss"]) 
     plt.title("Loss") 
     plt.savefig(os.path.join(args.out_dir,"loss.png"))
 
     plt.figure()
     plt.plot(history["tr_acc"])
     plt.plot(history["val_acc"])
-    plt.legend(["train","val"])
+    plt.plot(history["val_acc_tuned"])
+    plt.legend(["train_acc","val_acc@0.5","val_acc@bestThr"])
     plt.title("Accuracy")
     plt.savefig(os.path.join(args.out_dir,"acc.png"))
 
     plt.figure()
     plt.plot(history["tr_auc"])
     plt.plot(history["val_auc"])
-    plt.legend(["train","val"])
+    plt.legend(["train_auc","val_auc"])
     plt.title("AUC")
     plt.savefig(os.path.join(args.out_dir,"auc.png"))
-    '''
-    plt.figure()
-    plt.plot(history["val_acc"])
-    plt.plot(history["val_auc"])
-    plt.plot(history["val_acc_tuned"])
-    plt.legend(["acc@0.5","AUC","acc@bestThr"])
-    plt.title("Val Metrics")
-    plt.savefig(os.path.join(args.out_dir,"val_metrics.png"))
-    '''
+
     print(f"Best val acc@0.5: {best_acc:.3f} | best_acc_ckpt: {best_acc_path}")
     print(f"Best val AUC: {best_auc:.3f} | best_auc_ckpt: {best_auc_path}")
     print(f"Best val acc@bestThr: {best_acc_tuned:.3f}  | best_acc_tuned_ckpt: {best_acc_tuned_path}")
