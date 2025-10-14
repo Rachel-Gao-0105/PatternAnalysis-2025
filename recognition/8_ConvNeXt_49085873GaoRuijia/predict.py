@@ -30,7 +30,6 @@ def build_transform(img_size, mean, std):
         transforms.Normalize(mean, std),
     ])
 
-
 def load_model_from_ckpt(ckpt_path, device):
     ckpt = torch.load(ckpt_path, map_location=device)
 
@@ -54,14 +53,30 @@ def load_model_from_ckpt(ckpt_path, device):
 
 @torch.no_grad()
 def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5, show=False):
+    """
+    Predict a single image with a trained model.
+
+    model: PyTorch model in eval mode.
+    img_path: Path to the input image.
+    device: 'cuda' or 'cpu'.
+    tf: Preprocessing transform that maps PIL.Image -> Tensor.
+    class_names: Optional list of class names aligned with class indices.
+    thr: Decision threshold for binary classification (applies to class-1 probability).
+    show: If True, display the image with the prediction title.
+
+    pred_idx: Predicted class index.
+    prob1: Confidence of the predicted class (for binary: prob of the chosen class).
+    probs: Softmax probabilities over classes.
+    """
     img = Image.open(img_path).convert("RGB")
     x = tf(img).unsqueeze(0).to(device)
 
+    # forward pass with AMP
     with torch.amp.autocast("cuda", enabled=(device == "cuda")):
         logits = model(x)
         probs = F.softmax(logits, dim=1)[0].cpu().numpy()
 
-    # binary: thresholding; multi-class: argmax
+    # apply threshold on probability of class 1
     pred_idx = int(probs[1] >= thr) if probs.shape[0] == 2 else int(np.argmax(probs))
     prob1 = float(probs[pred_idx])
 
@@ -72,6 +87,7 @@ def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5,
         print(f"[IMAGE] {img_path}")
         print(f"Pred index: {pred_idx} | Confidence: {prob1:.4f}")
 
+    # visualize
     if show:
         if class_names is not None:
             title = f"Pred: class {class_names[pred_idx]}, index {pred_idx} ({prob1*100:.1f}%)"
@@ -91,7 +107,7 @@ def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_worke
     if not os.path.isdir(folder):
         raise FileNotFoundError(f"Folder not found: {folder}")
 
-    ds = datasets.ImageFolder(folder, transform=tf) #indexing by subfolder names
+    ds = datasets.ImageFolder(folder, transform=tf) #按子文件夹名排序生成 classes，同时决定标签编码
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
                         num_workers=num_workers, pin_memory=True)
     class_names = ds.classes
@@ -104,14 +120,15 @@ def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_worke
             out = model(x)
         p = out.softmax(1)[:, 1].detach().cpu().numpy() if out.shape[1] == 2 else out.softmax(1).detach().cpu().numpy().max(axis=1)
 
-        # binary: positive class prob; multi-class: max prob
-        preds.extend(p)  # positive class prob for binary, max prob for multi-class
+        # 二分类：取正类（索引1）的softmax概率
+        preds.extend(p)  # 概率(正类)
         gts.extend(y.cpu().numpy())
 
     preds = np.array(preds)
     gts = np.array(gts, dtype=int)
 
     # AUC & ACC
+    # 二分类概率
     try:
         auc = roc_auc_score(gts, preds)
     except Exception:
@@ -147,6 +164,8 @@ def main():
 
     # single image inference
     if args.image is not None:
+        # 若需要类别名而你没有数据集，可不传 class_names
+        # 如果你希望也显示类别名，可以临时从 data_root/split 读一下 classes
         predict_single_image(model, args.image, device, tf, class_names=class_names, thr=best_thr, show=True)
         return
 
