@@ -1,5 +1,6 @@
 import argparse
 import os
+from pathlib import Path
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -20,6 +21,7 @@ def parse_args():
     ap.add_argument("--batch_size", type=int, default=64)
     ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--save_dir", type=str, default="pred_out", help="directory to save outputs")
     return ap.parse_args()
 
 def build_transform(img_size, mean, std):
@@ -52,7 +54,7 @@ def load_model_from_ckpt(ckpt_path, device):
     return model, mean, std, best_thr, ckpt_args, classes
 
 @torch.no_grad()
-def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5, show=False):
+def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5, save_dir="pred_out"):
     """
     Predict a single image with a trained model.
 
@@ -83,26 +85,29 @@ def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5,
     if class_names is not None and 0 <= pred_idx < len(class_names):
         print(f"[IMAGE] {img_path}")
         print(f"Pred index: {pred_idx} | Pred class: {class_names[pred_idx]} | Confidence: {prob1:.4f}")
+        title = f"Pred: class {class_names[pred_idx]}, index {pred_idx} ({prob1*100:.1f}%)"
     else:
         print(f"[IMAGE] {img_path}")
         print(f"Pred index: {pred_idx} | Confidence: {prob1:.4f}")
+        title = f"Pred: index {pred_idx} ({prob1*100:.1f}%)"
 
     # visualize
-    if show:
-        if class_names is not None:
-            title = f"Pred: class {class_names[pred_idx]}, index {pred_idx} ({prob1*100:.1f}%)"
-        else:
-            title = f"Pred: index {pred_idx} ({prob1*100:.1f}%)"
+    if save_dir is not None:
+        plt.figure()
         plt.imshow(img)
         plt.title(title)
         plt.axis("off")
-        plt.show()
+
+        plt.savefig(os.path.join(save_dir,f"{Path(img_path).stem}_pred.png"), bbox_inches="tight")
+        print(f"Figure saved to: {save_dir}")
+
+        plt.close()
 
     return pred_idx, prob1, probs
 
 
 @torch.no_grad()
-def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_workers=0, thr=0.5):
+def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_workers=0, thr=0.5, save_dir="pred_out"):
     """
     Evaluate a folder-structured dataset (ImageFolder style) with a trained model.
 
@@ -154,18 +159,39 @@ def evaluate_folder(model, root_dir, split, device, tf, batch_size=64, num_worke
     cm = confusion_matrix(gts, y_hat, labels=list(range(len(class_names))))
     report = classification_report(gts, y_hat, target_names=class_names, digits=3)
 
+    plot_confusion_matrix_counts(cm, class_names)
+    plt.savefig(os.path.join(save_dir, "confusion_matrix.png")) 
+
     print("\nResults")
     print(f"AUC: {auc:.3f}")
     print(f"ACC@thr({thr:.3f}): {acc_thr:.3f}")
     print(f"ACC@0.5: {acc05:.3f}")
-    print("Confusion Matrix (rows=true, cols=pred):")
-    print(cm)
     print("\nClassification Report:")
     print(report)
 
+def plot_confusion_matrix_counts(cm, class_names, title="Confusion Matrix (counts)"):
+    plt.figure(figsize=(5.5, 4.5))
+    im = plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+    plt.title(title)
+    plt.colorbar(im, fraction=0.046, pad=0.04)
+    tick_marks = np.arange(len(class_names))
+    plt.xticks(tick_marks, class_names, rotation=45, ha="right")
+    plt.yticks(tick_marks, class_names)
+
+    thresh = cm.max() / 2.0 if cm.size > 0 else 0
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, f"{int(cm[i, j])}",
+                     ha="center", va="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
+    plt.tight_layout()
 
 def main():
     args = parse_args()
+    os.makedirs(args.save_dir, exist_ok=True)
     device = args.device
     print(f"Device: {device}")
 
@@ -178,7 +204,7 @@ def main():
 
     # single image inference
     if args.image is not None:
-        predict_single_image(model, args.image, device, tf, class_names=class_names, thr=best_thr, show=True)
+        predict_single_image(model, args.image, device, tf, class_names=class_names, thr=best_thr)
         return
 
     # dataset evaluation
