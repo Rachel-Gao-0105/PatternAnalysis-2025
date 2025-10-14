@@ -196,9 +196,10 @@ def parse_args():
     ap.add_argument("--num_workers", type=int, default=0, help="number of subprocesses for data loading")  
     ap.add_argument("--samples_per_class_train", type=int, default=None, help="e.g. 100 to quick pilot, None to use full set")
     ap.add_argument("--seed", type=int, default=42)
-    #early stopping, None to disable
+    #early stopping, None to disable min_delta = 1e-3
     ap.add_argument("--patience", type=int, default=10, help="epochs to wait without val_acc improvement, 0 to disable")
     ap.add_argument("--target_acc", type=float, default=0.8, help="early stop if val_acc >= target_acc, 0 to disable")
+    ap.add_argument("--min_delta", type=float, default=1e-3, help="minimum improvement to reset stagnation counter")
     return ap.parse_args()
 
 def main():
@@ -288,7 +289,7 @@ def main():
 
     patience = args.patience  # early-stopping patience (tolerated stagnation epochs)
     no_improve_epochs = 0 # counter for stagnation detection
-    min_delta = 1e-3  # minimum improvement to reset stagnation counter
+    min_delta = args.min_delta  # minimum improvement to reset stagnation counter
 
     # Training & Evaluation Loop
     for epoch in range(1, args.epochs + 1):
