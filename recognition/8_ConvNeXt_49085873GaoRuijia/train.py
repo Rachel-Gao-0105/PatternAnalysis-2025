@@ -196,8 +196,9 @@ def parse_args():
     ap.add_argument("--num_workers", type=int, default=0, help="number of subprocesses for data loading")  
     ap.add_argument("--samples_per_class_train", type=int, default=None, help="e.g. 100 to quick pilot, None to use full set")
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--patience", type=int, default=10, help="epochs to wait without val_acc improvement")
-    ap.add_argument("--target_acc", type=float, default=0.8, help="early stop if val_acc >= target_acc")
+    #early stopping, None to disable
+    ap.add_argument("--patience", type=int, default=10, help="epochs to wait without val_acc improvement, 0 to disable")
+    ap.add_argument("--target_acc", type=float, default=0.8, help="early stop if val_acc >= target_acc, 0 to disable")
     return ap.parse_args()
 
 def main():
@@ -331,11 +332,11 @@ def main():
         scheduler.step()
 
         # Early Stopping
-        if val_acc >= args.target_acc:
+        if val_acc >= 0 and val_acc >= args.target_acc:
             print(f"\nEarly Stopping Triggered: Validation accuracy reached {val_acc:.3f} ≥ {args.target_acc:.3f}.")
             break
 
-        if no_improve_epochs >= patience:
+        if no_improve_epochs >= 0 and no_improve_epochs >= patience:
             print(f"\nEarly stopping due to no improvement for {patience} epochs.")
             break
 
