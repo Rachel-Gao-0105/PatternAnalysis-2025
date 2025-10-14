@@ -226,6 +226,14 @@ def main():
     std  = [0.229, 0.224, 0.225]
 
     # Build training and validation datasets
+    train_ds, val_ds = build_datasets(
+        root_dir=args.data_root,
+        img_size=args.img_size,
+        samples_per_class=args.samples_per_class_train,
+        seed=args.seed,
+        mean=mean, 
+        std=std
+    )
     train_loader, val_loader = data_loader (root_dir=args.data_root, 
                                                 img_size=args.img_size, 
                                                 samples_per_class=args.samples_per_class_train, 
@@ -325,17 +333,47 @@ def main():
         if thr_stop == 0:
             if val_acc_tuned > best_acc_tuned:
                 best_acc_tuned = val_acc_tuned
-                torch.save({"model": model.state_dict(), "args": vars(args), "mean": mean, "std": std, "best_thr": best_thr}, best_acc_tuned_path)
+                ckpt = {
+                    "model": model.state_dict(),
+                    "args": vars(args),            # num_classes、dropout...
+                    "mean": mean,                  # [0.485, 0.456, 0.406]
+                    "std": std,                    # [0.229, 0.224, 0.225]
+                    "img_size": args.img_size,
+                    "classes": train_ds.classes,           # ['AD','NC']
+                    "class_to_idx": train_ds.class_to_idx, # {'AD':0,'NC':1}
+                    "best_thr": best_thr,          # threshold for best_acc_tuned
+                }
+                torch.save(ckpt, best_acc_tuned_path)
 
         # Save model with the highest accuracy at threshold 0.5
         if val_acc > best_acc:
             best_acc = val_acc
-            torch.save({"model": model.state_dict(), "args": vars(args), "mean": mean, "std": std, "best_thr": best_thr}, best_acc_path)
+            ckpt = {
+                    "model": model.state_dict(),
+                    "args": vars(args),            # num_classes、dropout...
+                    "mean": mean,                  # [0.485, 0.456, 0.406]
+                    "std": std,                    # [0.229, 0.224, 0.225]
+                    "img_size": args.img_size,
+                    "classes": train_ds.classes,           # ['AD','NC']
+                    "class_to_idx": train_ds.class_to_idx, # {'AD':0,'NC':1}
+                    "best_thr": best_thr,          # threshold for best_acc_tuned
+                }
+            torch.save(ckpt, best_acc_path)
 
         # Save model with the highest AUC
         if val_auc > best_auc:
             best_auc = val_auc
-            torch.save({"model": model.state_dict(), "args": vars(args), "mean": mean, "std": std, "best_thr": best_thr}, best_auc_path)
+            ckpt = {
+                    "model": model.state_dict(),
+                    "args": vars(args),            # num_classes、dropout...
+                    "mean": mean,                  # [0.485, 0.456, 0.406]
+                    "std": std,                    # [0.229, 0.224, 0.225]
+                    "img_size": args.img_size,
+                    "classes": train_ds.classes,           # ['AD','NC']
+                    "class_to_idx": train_ds.class_to_idx, # {'AD':0,'NC':1}
+                    "best_thr": best_thr,          # threshold for best_acc_tuned
+                }
+            torch.save(ckpt, best_auc_path)
                 
         scheduler.step()
 
