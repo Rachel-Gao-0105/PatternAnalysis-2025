@@ -17,7 +17,7 @@ def parse_args():
     ap.add_argument("--data_root", type=str, default=None, help="folder root that contains a split folder (e.g. validation)")
     ap.add_argument("--split", type=str, default="validation", help="subfolder name under data_root for evaluation")
     ap.add_argument("--image", type=str, default=None, help="single image path to predict (skip folder eval if provided)")
-    ap.add_argument("--img_size", type=int, default=448, help="inference resolution")
+    #ap.add_argument("--img_size", type=int, default=448, help="inference resolution")
     ap.add_argument("--batch_size", type=int, default=64)
     ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
@@ -51,7 +51,7 @@ def load_model_from_ckpt(ckpt_path, device):
     model.load_state_dict(ckpt["model"])
     model = model.to(device).eval()
 
-    return model, mean, std, best_thr, ckpt_args, classes
+    return model, mean, std, best_thr, ckpt_args, img_size, classes
 
 @torch.no_grad()
 def predict_single_image(model, img_path, device, tf, class_names=None, thr=0.5, save_dir="pred_out"):
@@ -196,10 +196,9 @@ def main():
     print(f"Device: {device}")
 
     # load ckpt & model
-    model, mean, std, best_thr, ckpt_args, class_names = load_model_from_ckpt(args.ckpt, device)
+    model, mean, std, best_thr, ckpt_args, img_size, class_names = load_model_from_ckpt(args.ckpt, device)
 
     # transform
-    img_size = args.img_size
     tf = build_transform(img_size, mean, std)
 
     # single image inference
