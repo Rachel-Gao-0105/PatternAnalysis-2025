@@ -1,0 +1,21 @@
+Device: cuda
+
+Results
+AUC: 0.858
+ACC@thr(0.946): 0.783
+ACC@0.5: 0.732
+
+Classification Report:
+              precision    recall  f1-score   support
+
+          AD      0.838     0.697     0.761      4460
+          NC      0.745     0.868     0.802      4540
+
+    accuracy                          0.783      9000
+   macro avg      0.791     0.782     0.781      9000
+weighted avg      0.791     0.783     0.782      9000
+
+Device: cuda
+[IMAGE] D:/2025大四上s2UQ/COMP3710/Report/ADNI/AD_NC/validation/NC/1182968_94.jpeg
+Pred index: 1 | Pred class: NC | Confidence: 0.9603
+Figure saved to: pred_out
