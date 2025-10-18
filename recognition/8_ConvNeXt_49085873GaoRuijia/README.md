@@ -199,5 +199,16 @@ Batch prediction (Folder):
 python predict.py --ckpt runs/best_acc_tuned.pth --data_root root/AD_NC --split validation --batch_size 64 --num_workers 0 --device cuda --save_dir pred_out  
 
 ## References
-
+### Course & Report
+[1] Pattern Recognition (COMP3710) – Course Report Material, Shekhar “Shakes” Chandra, Version 1.64 Final, The University of Queensland, 2025.  
+### Paper  
+[2] Z. Liu, H. Mao, C.-Y. Wu, C. Feichtenhofer, T. Darrell, and S. Xie, “A ConvNet for the 2020s,” arXiv preprint arXiv:2201.03545 [cs], Mar. 2022. [Online]. Available: http://arxiv.org/abs/2201.03545  
+### Online Resources
+[3] CSDN Blog: “ConvNeXt Architecture,” [Online]. Available: https://blog.csdn.net/qq_42076902/article/details/124529390  
+[4] Zhihu: “ConvNeXt —— A convolutional neural network that can challenge the Vision Transformer,” [Online]. Available: https://zhuanlan.zhihu.com/p/1928810982915941594  
+### AI Assistants & Tools
+[5] OpenAI ChatGPT (GPT-5 models), used for drafting and result interpretation.  
+[6] Google Gemini, used for configuration comparison.  
+[7] Anthropic Claude, used for estimating training time and computational resource planning.  
+[8] DeepL Translator, used for translation.  
 
