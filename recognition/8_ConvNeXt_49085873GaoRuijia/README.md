@@ -153,7 +153,7 @@ Training loss kept decreasing, with accuracy and AUC approaching 1.00. Validatio
 
 In summary, the model achieved stable discriminative ability on the validation set (AUC ≈ 0.85) and a threshold-optimized accuracy (≈ 0.78), while further extending training did not yield additional gains.  
 
-Training logs are available at: [images/train.out](images/train.out).   
+Training logs are available at: [train.out](images/train.out).   
 
 The training configuration is as follows:  
 | Argument | Value |
@@ -198,7 +198,7 @@ Example prediction on a single image (displaying predicted probability and class
 ![Confusion matrix](images/confusion_matrix.png)   
 Confusion matrix for the validation and test set  
 
-Inference logs are available at: [images/pred.out](images/pred.out). 
+Inference logs are available at: [pred.out](images/pred.out). 
 
 The inference configuration is as follows: 
 | Argument | Value |
