@@ -198,6 +198,8 @@ Example prediction on a single image (displaying predicted probability and class
 ![Confusion matrix](images/confusion_matrix.png)   
 Confusion matrix for the validation and test set  
 
+Inference logs are available at: [images/pred.out](images/pred.out). 
+
 The inference configuration is as follows: 
 | Argument | Value |
 | ----- | ----- |
