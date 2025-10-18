@@ -142,11 +142,11 @@ python predict.py --ckpt runs/best_acc_tuned.pth --data_root "root/AD_NC" --spli
 After training for 200 epochs on a RTX 4090 (24 GB) rented from GPUgeek platform, ConvNeXt achieved a maximum accuracy of 0.783 on the ADNI validation set following ROC optimal threshold tuning, with a corresponding threshold of 0.946.  
 
 The figure below displays the main metric curves from the training and validation phases:  
-![](images/acc.png)   
+![Accuracy](images/acc.png)   
 Training accuracy (blue), Validation accuracy @ 0.5 (orange), Validation accuracy @ optimal threshold (green)  
-![](images/auc.png)   
+![AUC](images/auc.png)   
 Training AUC (blue), Validation AUC (orange)  
-![](images/loss.png)  
+![Loss](images/loss.png)  
 Training loss (blue), Validation loss (orange)  
 
 Training loss kept decreasing, with accuracy and AUC approaching 1.00. Validation AUC and accuracy rose rapidly within the first 20–40 epochs. However, validation loss consistently increased and remained around ≈ 0.8–0.9, showing a clear divergence from the training loss, which indicates suboptimal calibration or mild overfitting due to high-confidence misclassifications. However, the model's separability did not degrade, as the AUC remained stable.  
@@ -193,9 +193,9 @@ The dataset is considered relatively class-balanced; therefore, class weighting 
 ### Predictions
 Inference and Prediction using the trained checkpoint are demonstrated as follows. The inference process employs the same Resize/Normalize pipeline as during training to ensure input distribution consistency.
 
-![](images/1182968_94_pred.png)   
+![single image](images/1182968_94_pred.png)   
 Example prediction on a single image (displaying predicted probability and class)  
-![](images/confusion_matrix.png)   
+![Confusion matrix](images/confusion_matrix.png)   
 Confusion matrix for the validation and test set  
 
 The inference configuration is as follows: 
