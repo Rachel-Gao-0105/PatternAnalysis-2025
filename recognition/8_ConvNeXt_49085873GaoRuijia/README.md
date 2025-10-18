@@ -13,7 +13,6 @@ This repository contains the implementation code of ConvNeXt. The ConvNeXt model
 The data is sourced from ADNI. This dataset contains many sliced MRI brain scan images labeled as Alzheimer's disease (AD) and normal control (NC).  
 Based on the ConvNeXt network，this project identified Alzheimer's disease from 2D MRI  brain scans and ultimately achieved an accuracy of 78.3% on the validation set .  
 
-
 ## Model Architecture
 The ConvNeXt network adopts the hierarchical residual macro-framework of ResNet while implementing systematic architectural refinements.  
 
@@ -64,6 +63,7 @@ The following are the required dependencies for this project:
 ### Dataset Structure
 The default data directory of this model has completed the division between the training set and the validation set.  
 The specific structure of the dataset is as follows:  
+```
 AD_NC  
 ├── train  
 │   ├── AD  
@@ -79,6 +79,7 @@ AD_NC
     └── NC  
         ├── 1182968_94.jpeg  
         ├── ...  
+```
 
 ### Training
 The following are the configuration parameters required for model training:  
@@ -104,7 +105,9 @@ The following are the configuration parameters required for model training:
 | `--mixup_alpha`             | MixUp coefficient (set `0` to disable) | `float` | `0.2` |
 
 An example command is provided below:  
+```bash
 python train.py --data_root root/AD_NC --drop_path_rate 0.2 --dropout_rate 0.3 --lr 1e-4 --epochs 200 --batch_size 64 --num_workers 8 --patience 0 --mixup_alpha 0  
+```
 
 Three types of optimal checkpoints will be saved during training:  
 (1) the highest validation accuracy (at a 0.5 threshold);  
@@ -125,10 +128,14 @@ The following are the configuration parameters required for predicting:
 | `--save_dir`    | Output directory | `str` | `pred_out` |
 
 Example commands are provided below:   
-Single image prediction:  
+Single image prediction: 
+```bash 
 python predict.py --ckpt runs5/best_acc_tuned.pth --data_root "root/AD_NC" --split validation --image "root/AD_NC/validation/NC/1182968_94.jpeg"  
+```
 Batch prediction (Folder):  
+```bash
 python predict.py --ckpt runs/best_acc_tuned.pth --data_root "root/AD_NC" --split validation  
+```
 
 ## Results
 ### Training
@@ -159,9 +166,9 @@ The training configuration is as follows:
 | `--target_acc`              | `0.8` |
 | `--min_delta`               | `1e-3` |
 | `--mixup_alpha`             | `0` |
-
+```bash
 python train.py --data_root root/AD_NC --img_size 448 --num_classes 2 --drop_path_rate 0.2 --dropout_rate 0.3 --weight_decay 0.07 --label_smoothing 0.1 --batch_size 64 --epochs 200 --lr 1e-4 --out_dir runs --num_workers 8 --samples_per_class_train None --seed 42 --patience 0 --target_acc 0.8 --min_delta 1e-3 --mixup_alpha 0  
-
+```
 Optimization methods used in training:  
 1. Drop Path (Stochastic Depth)  
 2. Mixup  
@@ -194,9 +201,13 @@ The inference configuration is as follows:
 | `--save_dir`    | `pred_out` |
 
 Single image prediction:   
+```bash
 python predict.py --ckpt runs/best_acc_tuned.pth --data_root root/AD_NC --split validation --image root/AD_NC/validation/NC/1182968_94.jpeg --batch_size 64 --num_workers 0 --device cuda --save_dir pred_out  
+```
 Batch prediction (Folder):   
+```bash
 python predict.py --ckpt runs/best_acc_tuned.pth --data_root root/AD_NC --split validation --batch_size 64 --num_workers 0 --device cuda --save_dir pred_out  
+```
 
 ## References
 ### Course & Report
