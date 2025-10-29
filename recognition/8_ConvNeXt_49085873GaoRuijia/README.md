@@ -27,7 +27,7 @@ The ConvNeXt network adopts the hierarchical residual macro-framework of ResNet 
 
 The model architecture is as follows:   
 ![ConvNeXt Architecture](images/convnext_arch.png)
-
+**Figure 1**: ConvNeXt Architecture
 ConvNeXt starts with a patchify stem, stacks ConvNeXt blocks containing depthwise convolutions and lightweight normalization or activation, and gradually downsamples via independent downsampling layers. Finally, it completes recognition through global average pooling followed by a linear classifier.  
 
 ## About the Dataset
@@ -143,11 +143,11 @@ After training for 200 epochs on a RTX 4090 (24 GB) rented from GPUgeek platform
 
 The figure below displays the main metric curves from the training and validation phases:  
 ![Accuracy](images/acc.png)   
-Training accuracy (blue), Validation accuracy @ 0.5 (orange), Validation accuracy @ optimal threshold (green)  
+**Figure 2**: Training accuracy (blue), Validation accuracy @ 0.5 (orange), Validation accuracy @ optimal threshold (green)  
 ![AUC](images/auc.png)   
-Training AUC (blue), Validation AUC (orange)  
+**Figure 3**: Training AUC (blue), Validation AUC (orange)  
 ![Loss](images/loss.png)  
-Training loss (blue), Validation loss (orange)  
+**Figure 4**: Training loss (blue), Validation loss (orange)  
 
 Training loss kept decreasing, with accuracy and AUC approaching 1.00. Validation AUC and accuracy rose rapidly within the first 20–40 epochs. However, validation loss consistently increased and remained around ≈ 0.8–0.9, showing a clear divergence from the training loss, which indicates suboptimal calibration or mild overfitting due to high-confidence misclassifications. However, the model's separability did not degrade, as the AUC remained stable.  
 
@@ -194,9 +194,9 @@ The dataset is considered relatively class-balanced; therefore, class weighting 
 Inference and Prediction using the trained checkpoint are demonstrated as follows. The inference process employs the same Resize/Normalize pipeline as during training to ensure input distribution consistency.
 
 ![single image](images/1182968_94_pred.png)   
-Example prediction on a single image (displaying predicted probability and class)  
+**Figure 5**: Example prediction on a single image (displaying predicted probability and class)  
 ![Confusion matrix](images/confusion_matrix.png)   
-Confusion matrix for the validation and test set  
+**Figure 6**: Confusion matrix for the validation and test set  
 
 Inference logs are available at: [pred.out](images/pred.out). 
 
