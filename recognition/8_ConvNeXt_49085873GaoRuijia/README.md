@@ -26,8 +26,8 @@ The ConvNeXt network adopts the hierarchical residual macro-framework of ResNet 
 - **Independent downsampling layer**: Replaced residual blocks with stride between stages with dedicated downsampling layers with LN → 2×2 / stride=2 convolution, uniformly handling resolution changes.  
 
 The model architecture is as follows:   
-![ConvNeXt Architecture](images/convnext_arch.png)
-**Figure 1**: ConvNeXt Architecture
+![ConvNeXt Architecture](images/convnext_arch.png)  
+**Figure 1**: ConvNeXt Architecture  
 ConvNeXt starts with a patchify stem, stacks ConvNeXt blocks containing depthwise convolutions and lightweight normalization or activation, and gradually downsamples via independent downsampling layers. Finally, it completes recognition through global average pooling followed by a linear classifier.  
 
 ## About the Dataset
